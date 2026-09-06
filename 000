@@ -1,0 +1,133 @@
+-- Roblox Utility Script (Inf Jump, Speed, Noclip)
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+
+-- State Variables
+local Config = {
+    InfiniteJump = false,
+    Noclip = false,
+    WalkSpeed = 16
+}
+
+-- Maintain Character Reference
+LocalPlayer.CharacterAdded:Connect(function(newChar)
+    Character = newChar
+    Humanoid = Character:WaitForChild("Humanoid")
+    Humanoid.WalkSpeed = Config.WalkSpeed
+end)
+
+-- 1. Infinite Jump Logic
+UserInputService.JumpRequest:Connect(function()
+    if Config.InfiniteJump and Character and Character:FindFirstChildOfClass("Humanoid") then
+        Character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+-- 2. Noclip Logic
+RunService.Stepped:Connect(function()
+    if Config.Noclip and Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") and part.CanCollide then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
+
+-- 3. Speed Control Loop
+RunService.RenderStepped:Connect(function()
+    if Character and Character:FindFirstChild("Humanoid") then
+        if Character.Humanoid.WalkSpeed ~= Config.WalkSpeed then
+            Character.Humanoid.WalkSpeed = Config.WalkSpeed
+        end
+    end
+end)
+
+-- UI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "UtilityGui"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 190)
+MainFrame.Position = UDim2.new(0.5, -110, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Title.Text = "Roblox Utility Hub"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 14
+Title.Font = Enum.Font.SourceSansBold
+Title.Parent = MainFrame
+
+local function CreateButton(text, posY, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(0.9, 0, 0, 30)
+    Btn.Position = UDim2.new(0.05, 0, 0, posY)
+    Btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.Text = text
+    Btn.Font = Enum.Font.SourceSans
+    Btn.TextSize = 14
+    Btn.Parent = MainFrame
+    Btn.MouseButton1Click:Connect(function()
+        callback(Btn)
+    end)
+    return Btn
+end
+
+-- Toggle Buttons
+local InfJumpBtn = CreateButton("กระโดดไม่จำกัด: OFF", 40, function(btn)
+    Config.InfiniteJump = not Config.InfiniteJump
+    btn.Text = "กระโดดไม่จำกัด: " .. (Config.InfiniteJump and "ON" or "OFF")
+    btn.BackgroundColor3 = Config.InfiniteJump and Color3.fromRGB(46, 139, 87) or Color3.fromRGB(50, 50, 60)
+end)
+
+local NoclipBtn = CreateButton("เดินทะลุ: OFF", 75, function(btn)
+    Config.Noclip = not Config.Noclip
+    btn.Text = "เดินทะลุ: " .. (Config.Noclip and "ON" or "OFF")
+    btn.BackgroundColor3 = Config.Noclip and Color3.fromRGB(46, 139, 87) or Color3.fromRGB(50, 50, 60)
+end)
+
+-- Speed Controls
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.9, 0, 0, 20)
+SpeedLabel.Position = UDim2.new(0.05, 0, 0, 115)
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "ความเร็ววิ่ง: 16"
+SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+SpeedLabel.Font = Enum.Font.SourceSans
+SpeedLabel.TextSize = 14
+SpeedLabel.Parent = MainFrame
+
+local SpeedBox = Instance.new("TextBox")
+SpeedBox.Size = UDim2.new(0.9, 0, 0, 30)
+SpeedBox.Position = UDim2.new(0.05, 0, 0, 140)
+SpeedBox.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+SpeedBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+SpeedBox.PlaceholderText = "ใส่ค่า 1 - 100"
+SpeedBox.Text = ""
+SpeedBox.Font = Enum.Font.SourceSans
+SpeedBox.TextSize = 14
+SpeedBox.Parent = MainFrame
+
+SpeedBox.FocusLost:Connect(function(enterPressed)
+    local val = tonumber(SpeedBox.Text)
+    if val then
+        val = math.clamp(math.floor(val), 1, 100)
+        Config.WalkSpeed = val
+        SpeedLabel.Text = "ความเร็ววิ่ง: " .. tostring(val)
+    end
+    SpeedBox.Text =RunService
